@@ -8,17 +8,17 @@
 
 **MediScan** is an end-to-end MLOps project that detects **15 common thoracic diseases** from chest X-rays. Unlike standard models that fail on rare diseases, MediScan introduces a custom **Square-Root Loss Scaling** technique to mitigate extreme class imbalance (e.g., Hernia, which is <0.2% of the dataset).
 
-📄 **[Read the Research Paper (TechRxiv)](./MediScan_Research_Paper.pdf)** *(Link this to your PDF)*
+📄 **[Read the Research Paper (TechRxiv)](./MediScan_Research_Paper.pdf)** 
 
 ---
 
 ## Key Features
 
 * **Advanced Architecture:** Custom `DenseNet121` fine-tuned on the NIH Chest X-ray dataset (100k+ images).
-* * Novel Imbalance Mitigation:** Implements **Square-Root Loss Scaling** instead of standard linear weighting, reducing the "panic signal" for rare classes.
-* ** Bias Calibration:** Post-training logit adjustment (Bias Subtraction) reduces Hernia False Positive Rates (FPR) from **99% to 1%**.
-* ** High-Performance Backend:** Asynchronous inference engine built with **FastAPI** and **Uvicorn**.
-* ** Containerized:** Fully dockerized application ready for cloud deployment (Render/AWS).
+* **Novel Imbalance Mitigation:** Implements **Square-Root Loss Scaling** instead of standard linear weighting, reducing the "panic signal" for rare classes.
+* **Bias Calibration:** Post-training logit adjustment (Bias Subtraction) reduces Hernia False Positive Rates (FPR) from **99% to 1%**.
+* **High-Performance Backend:** Asynchronous inference engine built with **FastAPI** and **Uvicorn**.
+* **Containerized:** Fully dockerized application ready for cloud deployment (Render/AWS).
 
 ---
 
