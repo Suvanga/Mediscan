@@ -1,0 +1,16 @@
+# Environments
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac OS
+.DS_Store
+
+# PyTorch Models (Avoid pushing heavy files to GitHub)
+models/*.pth
+*.pt

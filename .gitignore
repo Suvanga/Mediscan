@@ -1,0 +1,20 @@
+# Environments
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac OS
+.DS_Store
+
+# PyTorch Models (Important: GitHub blocks files > 100MB)
+*.pth
+*.pt
+
+# Data (Don't push heavy datasets)
+data/
+datasets/
