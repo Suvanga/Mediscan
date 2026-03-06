@@ -1,16 +1,20 @@
 import { useState, useRef, useCallback } from "react";
-import { CloudUpload, FileImage, X } from "lucide-react";
+import { CloudUpload, FileImage, X, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import axios from "axios";
 
 interface UploadZoneProps {
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
   onClear: () => void;
   imagePreview: string | null;
+  // NEW: Function to pass the AI results back to the main App
+  onScanComplete?: (results: any) => void; 
 }
 
-export function UploadZone({ onFileSelect, selectedFile, onClear, imagePreview }: UploadZoneProps) {
+export function UploadZone({ onFileSelect, selectedFile, onClear, imagePreview, onScanComplete }: UploadZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // NEW: Loading state
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -36,6 +40,30 @@ export function UploadZone({ onFileSelect, selectedFile, onClear, imagePreview }
     const file = e.target.files?.[0];
     if (file) onFileSelect(file);
   }, [onFileSelect]);
+
+  // NEW: The function that actually sends the image to FastAPI
+  const handleAnalyzeScan = async () => {
+    if (!selectedFile) return;
+
+    setIsProcessing(true);
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      // Sends the image to your Python backend at http://127.0.0.1:8000/predict
+      const response = await axios.post("/predict", formData);
+      
+      console.log("AI Prediction Success:", response.data);
+      if (onScanComplete) {
+        onScanComplete(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to analyze scan:", error);
+      alert("Error connecting to the ML backend. Is your FastAPI server running?");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -123,9 +151,22 @@ export function UploadZone({ onFileSelect, selectedFile, onClear, imagePreview }
                 <p className="text-[#334155] truncate" style={{ fontSize: '0.875rem', fontWeight: 500 }}>{selectedFile.name}</p>
                 <p className="text-[#94a3b8]" style={{ fontSize: '0.75rem' }}>{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
               </div>
-              <div className="px-2.5 py-1 rounded-full bg-green-100 text-green-700" style={{ fontSize: '0.6875rem', fontWeight: 600 }}>
-                Ready
-              </div>
+              
+              {/* NEW: The Analyze Button */}
+              <button
+                onClick={handleAnalyzeScan}
+                disabled={isProcessing}
+                className={`ml-auto px-4 py-2 rounded-lg font-semibold text-white transition-all flex items-center gap-2 ${
+                  isProcessing ? "bg-slate-400 cursor-not-allowed" : "bg-[#0EA5E9] hover:bg-blue-600 shadow-sm"
+                }`}
+                style={{ fontSize: '0.875rem' }}
+              >
+                {isProcessing ? (
+                  <><Activity className="w-4 h-4 animate-spin" /> Analyzing...</>
+                ) : (
+                  "Analyze Scan"
+                )}
+              </button>
             </div>
           </motion.div>
         )}

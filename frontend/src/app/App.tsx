@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Zap, Activity } from "lucide-react";
+import axios from "axios";
 import { UploadZone } from "./components/UploadZone";
 import { ProcessingOverlay } from "./components/ProcessingOverlay";
 import { DiagnosticResults } from "./components/DiagnosticResults";
@@ -9,22 +10,20 @@ type AppState = "upload" | "processing" | "results";
 
 const SAMPLE_XRAY = "https://images.unsplash.com/photo-1584555684040-bad07f46a21f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVzdCUyMHhyYXklMjBtZWRpY2FsJTIwcmFkaW9ncmFwaHxlbnwxfHx8fDE3NzI3MzQ2NTl8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 
-const MOCK_RESULTS = [
-  { disease: "Pneumothorax", confidence: 95.72 },
-  { disease: "Edema", confidence: 51.61 },
-  { disease: "Hernia", confidence: 14.25 },
-  { disease: "Consolidation", confidence: 72.38 },
-  { disease: "Cardiomegaly", confidence: 43.94 },
-  { disease: "Atelectasis", confidence: 8.17 },
-  { disease: "Pleural Effusion", confidence: 67.52 },
-  { disease: "Mass", confidence: 5.33 },
-];
+// Defines the shape of the data coming from your Python API
+interface DiagnosticResult {
+  disease: string;
+  confidence: number;
+}
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>("upload");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  
+  // State to hold the real predictions from your Python ML model
+  const [aiResults, setAiResults] = useState<DiagnosticResult[]>([]);
 
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
@@ -38,25 +37,45 @@ export default function App() {
     setImagePreview(null);
   }, []);
 
-  const handleAnalyze = useCallback(() => {
+  // THE INTEGRATION: This function talks to your FastAPI backend
+  const handleAnalyze = async () => {
     if (!selectedFile) return;
     setAppState("processing");
     setProgress(0);
-  }, [selectedFile]);
 
-  // Simulate processing
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      // Send the image to your Python server DIRECTLY
+      const response = await axios.post("http://127.0.0.1:8000/predict", formData);
+      
+      // Get predictions (adjusts automatically based on your JSON format)
+      const predictions = response.data.predictions || response.data;
+      setAiResults(predictions);
+
+      // Force progress to 100% and show results once the API successfully returns
+      setProgress(100);
+      setTimeout(() => setAppState("results"), 400);
+
+    } catch (error) {
+      console.error("API Error:", error);
+      alert("Error connecting to the ML backend. Is your Python FastAPI server running on port 8000?");
+      setAppState("upload"); // Reset UI so they can try again
+    }
+  };
+
+  // Smart Processing Simulation: Goes up to 90% and waits for the API
   useEffect(() => {
     if (appState !== "processing") return;
+    
     const interval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => setAppState("results"), 400);
-          return 100;
-        }
+        if (prev >= 90) return 90; // Stop at 90% until API completes
         return prev + Math.random() * 8 + 2;
       });
     }, 200);
+    
     return () => clearInterval(interval);
   }, [appState]);
 
@@ -65,9 +84,10 @@ export default function App() {
     setSelectedFile(null);
     setImagePreview(null);
     setProgress(0);
+    setAiResults([]); // Clear old results
   }, []);
 
-  // Demo mode: use sample image if user wants to try without uploading
+  // Demo mode
   const handleDemo = useCallback(() => {
     const demoFile = new File([""], "chest-xray-demo.png", { type: "image/png" });
     setSelectedFile(demoFile);
@@ -76,8 +96,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] flex flex-col items-center justify-center p-8" style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* Centered Card Container */}
       <AnimatePresence mode="wait">
+        
+        {/* Upload State */}
         {appState === "upload" && (
           <motion.div
             key="upload"
@@ -87,7 +108,6 @@ export default function App() {
             transition={{ duration: 0.3 }}
             className="w-full max-w-2xl bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden"
           >
-            {/* Branding Header inside card */}
             <div className="px-8 pt-8 pb-6 border-b border-slate-100">
               <div className="flex items-center justify-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-[#0EA5E9] flex items-center justify-center shadow-lg shadow-[#0EA5E9]/25">
@@ -102,7 +122,6 @@ export default function App() {
               </p>
             </div>
 
-            {/* Upload Zone */}
             <div className="p-8">
               <UploadZone
                 onFileSelect={handleFileSelect}
@@ -111,10 +130,9 @@ export default function App() {
                 imagePreview={imagePreview}
               />
 
-              {/* Analyze button */}
               <div className="mt-6 flex flex-col items-center gap-3">
                 <button
-                  onClick={handleAnalyze}
+                  onClick={handleAnalyze} // Triggers the real API call!
                   disabled={!selectedFile}
                   className={`
                     w-full py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200
@@ -141,18 +159,9 @@ export default function App() {
               </div>
             </div>
 
-            {/* Feature pills */}
             <div className="px-8 pb-8 flex flex-wrap justify-center gap-2">
-              {[
-                "14 Pathology Detection",
-                "97.8% Accuracy",
-                "< 2s Analysis",
-              ].map((feature) => (
-                <span
-                  key={feature}
-                  className="px-3 py-1.5 rounded-full bg-slate-100 text-[#64748b]"
-                  style={{ fontSize: '0.6875rem', fontWeight: 500 }}
-                >
+              {["14 Pathology Detection", "97.8% Accuracy", "< 2s Analysis"].map((feature) => (
+                <span key={feature} className="px-3 py-1.5 rounded-full bg-slate-100 text-[#64748b]" style={{ fontSize: '0.6875rem', fontWeight: 500 }}>
                   {feature}
                 </span>
               ))}
@@ -160,6 +169,7 @@ export default function App() {
           </motion.div>
         )}
 
+        {/* Processing State */}
         {appState === "processing" && imagePreview && (
           <motion.div
             key="processing"
@@ -181,6 +191,7 @@ export default function App() {
           </motion.div>
         )}
 
+        {/* Results State */}
         {appState === "results" && imagePreview && (
           <motion.div
             key="results"
@@ -193,13 +204,14 @@ export default function App() {
             <div className="px-8 pt-8 pb-6 border-b border-slate-100 text-center">
               <h2 className="text-[#0f172a]" style={{ fontSize: '1.25rem', fontWeight: 600 }}>Diagnostic Report</h2>
               <p className="text-[#64748b] mt-1" style={{ fontSize: '0.875rem' }}>
-                AI analysis complete &middot; {MOCK_RESULTS.length} pathologies evaluated
+                AI analysis complete &middot; {aiResults.length} pathologies evaluated
               </p>
             </div>
             <div className="p-8">
+              {/* Passes the REAL API RESULTS to the UI! */}
               <DiagnosticResults
                 imagePreview={imagePreview}
-                results={MOCK_RESULTS}
+                results={aiResults}
                 onReset={handleReset}
               />
             </div>
