@@ -14,3 +14,8 @@ __pycache__/
 # PyTorch Models (Avoid pushing heavy files to GitHub)
 models/*.pth
 *.pt
+
+
+venv/
+.env
+models/*.pth

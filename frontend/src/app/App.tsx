@@ -48,7 +48,8 @@ export default function App() {
 
     try {
       // Send the image to your Python server DIRECTLY
-      const response = await axios.post("http://127.0.0.1:8000/predict", formData);
+      const baseURL = import.meta.env.VITE_API_URL || "";
+      const response = await axios.post(`${baseURL}/predict`, formData);
       
       // Get predictions (adjusts automatically based on your JSON format)
       const predictions = response.data.predictions || response.data;
