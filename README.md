@@ -8,7 +8,11 @@
 
 **MediScan** is an end-to-end MLOps project that detects **15 common thoracic diseases** from chest X-rays. Unlike standard models that fail on rare diseases, MediScan introduces a custom **Square-Root Loss Scaling** technique to mitigate extreme class imbalance (e.g., Hernia, which is <0.2% of the dataset).
 
-📄 **[Read the Research Paper (TechRxiv)](./MediScan_Research_Paper.pdf)** 
+📄 **[Checkout the project)](https://xrayai.suvanga.com/)** 
+
+Research paper will be available soon :)
+
+
 
 ---
 
