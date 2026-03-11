@@ -87,14 +87,25 @@ export default function App() {
     setProgress(0);
     setAiResults([]); // Clear old results
   }, []);
-
-  // Demo mode
-  const handleDemo = useCallback(() => {
-    const demoFile = new File([""], "chest-xray-demo.png", { type: "image/png" });
-    setSelectedFile(demoFile);
-    setImagePreview(SAMPLE_XRAY);
+// Demo mode
+  const handleDemo = useCallback(async () => {
+    try {
+      // 1. Fetch the actual image data from the URL
+      const response = await fetch(SAMPLE_XRAY);
+      const blob = await response.blob();
+      
+      // 2. Convert that data into a real File object
+      const demoFile = new File([blob], "sample-xray.jpg", { type: "image/jpeg" });
+      
+      // 3. Set the state so the UI and backend can use it
+      setSelectedFile(demoFile);
+      setImagePreview(SAMPLE_XRAY);
+    } catch (error) {
+      console.error("Failed to load demo image:", error);
+      alert("Failed to load the sample image. Please try uploading a file manually.");
+    }
   }, []);
-
+  
   return (
     <div className="min-h-screen bg-[#f1f5f9] flex flex-col items-center justify-center p-8" style={{ fontFamily: "'Inter', sans-serif" }}>
       <AnimatePresence mode="wait">
